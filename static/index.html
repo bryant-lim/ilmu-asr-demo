@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dialect ASR Lab</title>
+    <!-- Premium Fonts: Playfair Display for editorial headers, Inter for readable text -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <div class="container">
+        <!-- Title and Editorial Description -->
+        <header class="workspace-header">
+            <span class="workspace-tag">API Experiment Lab</span>
+            <h1 class="workspace-title">Dialect ASR Lab</h1>
+            <p class="workspace-description">
+                A comparative transcription dashboard analyzing local regional speech patterns. 
+                Using the specialized <strong>ilmu-asr-v4.2</strong> model to capture exact spoken Kelantanese dialect, 
+                and translating/analyzing conversational semantics using the <strong>ilmu-mini-v3.3</strong> reasoning model.
+            </p>
+        </header>
+
+        <!-- Configuration and Input Panel -->
+        <section class="control-panel card">
+            <div class="panel-section api-key-section">
+                <h2 class="section-title">Credentials</h2>
+                <div class="input-group">
+                    <input type="password" id="apiKeyInput" placeholder="Sila masukkan ILMU API Key..." autocomplete="off">
+                    <button id="saveKeyBtn" class="btn btn-secondary">Simpan</button>
+                    <button id="clearKeyBtn" class="btn btn-danger hidden">Padam</button>
+                </div>
+                <p class="helper-text">Kunci API disimpan secara tempatan di dalam pelayar anda (localStorage).</p>
+            </div>
+
+            <div class="panel-grid">
+                <!-- Simulation Default Run -->
+                <div class="panel-section default-simulation">
+                    <h2 class="section-title">Dialect Simulation</h2>
+                    <p class="helper-text">Simulasikan pengecaman audio dengan loghat Kelantan (Kelate.mp3) yang telah disediakan.</p>
+                    
+                    <!-- Custom Player Widget -->
+                    <div class="player-container">
+                        <audio id="defaultAudio" src="/api/audio" preload="metadata"></audio>
+                        <div class="player-controls">
+                            <button id="playBtn" class="player-btn" aria-label="Play">
+                                <svg class="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                <svg class="pause-icon hidden" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                            </button>
+                            <div class="player-timeline-wrapper">
+                                <input type="range" id="progressBar" class="player-progress" min="0" max="100" value="0">
+                            </div>
+                            <span id="timeDisplay" class="player-time">0:00 / 0:31</span>
+                        </div>
+                    </div>
+
+                    <button id="runSimBtn" class="btn btn-primary w-full">Jalankan Simulasi</button>
+                </div>
+
+                <!-- Custom Upload Run -->
+                <div class="panel-section custom-upload">
+                    <h2 class="section-title">Upload Custom Audio</h2>
+                    <p class="helper-text font-normal">Muat naik fail audio tersendiri (format .mp3, .wav, .m4a dsb) untuk ditranskripsi.</p>
+                    
+                    <div class="file-dropzone" id="dropzone">
+                        <input type="file" id="fileInput" accept="audio/*" class="hidden-input">
+                        <div class="dropzone-prompt" id="dropzonePrompt">
+                            <svg class="upload-icon" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                            <span class="prompt-text">Seret fail ke sini atau <strong>pilih fail</strong></span>
+                            <span class="file-name hidden" id="selectedFileName"></span>
+                        </div>
+                    </div>
+
+                    <button id="uploadTranscribeBtn" class="btn btn-primary w-full">Muat Naik & Transkrip</button>
+                </div>
+            </div>
+
+            <!-- Dialect Speech Synthesis (TTS) Section -->
+            <div class="panel-tts-section">
+                <h2 class="section-title">Dialect Speech Synthesis (TTS)</h2>
+                <p class="helper-text">Tulis teks dalam loghat Kelantan (Kelate) dan hasilkan suara bertutur menggunakan model <strong>ilmu-tts-v2</strong>.</p>
+                <div class="tts-form-grid">
+                    <div class="tts-input-column">
+                        <textarea id="ttsTextInput" placeholder="Tulis teks dialek di sini... (Contoh: Kawe tok tahu dio nok kelik bilo esok)" rows="2"></textarea>
+                    </div>
+                    <div class="tts-controls-column">
+                        <div class="select-wrapper">
+                            <select id="ttsVoiceSelect">
+                                <option value="voice_1">Voice 1 (Perempuan)</option>
+                                <option value="voice_2">Voice 2 (Lelaki)</option>
+                                <option value="voice_3">Voice 3 (Lelaki Alternatif)</option>
+                            </select>
+                        </div>
+                        <button id="synthesizeBtn" class="btn btn-primary w-full">Hasilkan Suara (TTS)</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Loading Overlay (Sleek Minimal Progress Bar) -->
+        <div id="loadingIndicator" class="loading-container hidden">
+            <div class="loading-progress-bar">
+                <div class="loading-progress-fill"></div>
+            </div>
+            <p class="loading-text">Sedang memproses audio menggunakan model ilmu-asr-v4.2 & ilmu-mini-v3.3...</p>
+        </div>
+
+        <!-- Error Container -->
+        <div id="errorContainer" class="error-container hidden">
+            <span class="error-icon">!</span>
+            <span id="errorMessage" class="error-text">Ralat memproses API.</span>
+        </div>
+
+        <!-- Historical Results Feed -->
+        <section class="results-section">
+            <div class="results-header">
+                <h2 class="results-feed-title">Simulation Feed</h2>
+                <button id="clearFeedBtn" class="btn btn-secondary hidden">Kosongkan Feed</button>
+            </div>
+            <div id="resultsFeed" class="results-feed">
+                <!-- Placeholder for empty feed -->
+                <div id="feedPlaceholder" class="feed-placeholder card">
+                    <p>Tiada simulasi dijalankan lagi. Sila klik <strong>"Jalankan Simulasi"</strong> di atas atau muat naik fail audio anda sendiri.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="workspace-footer">
+            <p>by B.R.Y.A.N.T</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
