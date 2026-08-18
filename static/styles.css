@@ -687,3 +687,211 @@ body {
     font-weight: 500;
     text-transform: uppercase;
 }
+
+/* Navigation Tabs */
+.workspace-tabs {
+    display: flex;
+    gap: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 2rem;
+    padding-bottom: 0.5rem;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0.5rem 0.25rem;
+    position: relative;
+    transition: color 0.2s ease;
+}
+
+.tab-btn:hover {
+    color: var(--text-primary);
+}
+
+.tab-btn.active {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.tab-btn.active::after {
+    content: "";
+    position: absolute;
+    bottom: -0.6rem;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: var(--text-primary);
+}
+
+/* Tab content visibility */
+.tab-content.hidden {
+    display: none !important;
+}
+
+/* Microphone Button Styling */
+.mic-button {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.mic-button.idle {
+    background-color: #fafafa;
+    color: var(--text-secondary);
+}
+
+.mic-button.idle:hover {
+    border-color: var(--text-primary);
+    color: var(--text-primary);
+    transform: scale(1.05);
+}
+
+.mic-button.recording {
+    background-color: #fee2e2;
+    border-color: #ef4444;
+    color: #ef4444;
+    animation: mic-pulse 1.5s infinite;
+}
+
+.mic-button.processing {
+    background-color: #fef3c7;
+    border-color: #f59e0b;
+    color: #f59e0b;
+}
+
+.mic-button.speaking {
+    background-color: #dcfce7;
+    border-color: #22c55e;
+    color: #22c55e;
+    animation: mic-pulse-green 1.5s infinite;
+}
+
+@keyframes mic-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+        transform: scale(1);
+    }
+    70% {
+        box-shadow: 0 0 0 15px rgba(239, 68, 68, 0);
+        transform: scale(1.05);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+        transform: scale(1);
+    }
+}
+
+@keyframes mic-pulse-green {
+    0% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+        transform: scale(1);
+    }
+    70% {
+        box-shadow: 0 0 0 15px rgba(34, 197, 94, 0);
+        transform: scale(1.05);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+        transform: scale(1);
+    }
+}
+
+/* Chat logs container */
+.agent-chat-log {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    min-height: 150px;
+    max-height: 450px;
+    overflow-y: auto;
+    padding: 0.5rem;
+    border-radius: 4px;
+}
+
+.chat-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    text-align: center;
+    height: 120px;
+    border: 1px dashed var(--border-color);
+    border-radius: 4px;
+    background-color: #fafafa;
+}
+
+/* Chat Bubbles */
+.chat-row {
+    display: flex;
+    flex-direction: column;
+    max-width: 80%;
+}
+
+.chat-row.user {
+    align-self: flex-end;
+    align-items: flex-end;
+}
+
+.chat-row.assistant {
+    align-self: flex-start;
+    align-items: flex-start;
+}
+
+.chat-sender {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.chat-bubble {
+    padding: 0.75rem 1.15rem;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.chat-row.user .chat-bubble {
+    background-color: #1e293b;
+    color: #ffffff;
+    border-bottom-right-radius: 2px;
+}
+
+.chat-row.assistant .chat-bubble {
+    background-color: #f1f5f9;
+    color: var(--text-primary);
+    border-bottom-left-radius: 2px;
+    border: 1px solid var(--border-color);
+}
+
+/* Latency Metadata styling */
+.latency-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.35rem;
+    padding: 0.15rem 0.4rem;
+    background-color: #fafafa;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}

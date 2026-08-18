@@ -499,4 +499,260 @@ document.addEventListener('DOMContentLoaded', () => {
              .replace(/"/g, "&quot;")
              .replace(/'/g, "&#039;");
     }
+
+    // ==========================================
+    // TAB SWITCHING LOGIC
+    // ==========================================
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const labTabContent = document.getElementById('labTabContent');
+    const agentTabContent = document.getElementById('agentTabContent');
+
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const tab = btn.dataset.tab;
+            if (tab === 'lab') {
+                labTabContent.classList.remove('hidden');
+                agentTabContent.classList.add('hidden');
+            } else {
+                labTabContent.classList.add('hidden');
+                agentTabContent.classList.remove('hidden');
+                // Stop any running agent audio if switching tabs
+                if (currentAgentAudio) {
+                    currentAgentAudio.pause();
+                }
+            }
+        });
+    });
+
+    // ==========================================
+    // REAL-TIME VOICE AGENT LOGIC
+    // ==========================================
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+    let agentChatHistory = [];
+    let currentAgentAudio = null;
+
+    const micButton = document.getElementById('micButton');
+    const micStatusText = document.getElementById('micStatusText');
+    const micHelperText = document.getElementById('micHelperText');
+    const agentSystemPrompt = document.getElementById('agentSystemPrompt');
+    const agentVoiceSelect = document.getElementById('agentVoiceSelect');
+    const agentChatLog = document.getElementById('agentChatLog');
+    const clearAgentChatBtn = document.getElementById('clearAgentChatBtn');
+
+    async function toggleRecording() {
+        if (isRecording) {
+            stopRecording();
+        } else {
+            await startRecording();
+        }
+    }
+
+    async function startRecording() {
+        audioChunks = [];
+        hideError();
+        
+        if (currentAgentAudio) {
+            currentAgentAudio.pause();
+            currentAgentAudio = null;
+        }
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            
+            let options = { mimeType: 'audio/webm' };
+            if (!MediaRecorder.isTypeSupported('audio/webm')) {
+                options = { mimeType: 'audio/ogg' };
+                if (!MediaRecorder.isTypeSupported('audio/ogg')) {
+                    options = {}; // fallback to default
+                }
+            }
+
+            mediaRecorder = new MediaRecorder(stream, options);
+            
+            mediaRecorder.addEventListener('dataavailable', event => {
+                if (event.data.size > 0) {
+                    audioChunks.push(event.data);
+                }
+            });
+
+            mediaRecorder.addEventListener('stop', () => {
+                const mimeType = mediaRecorder.mimeType || 'audio/webm';
+                const audioBlob = new Blob(audioChunks, { type: mimeType });
+                
+                // Close streams immediately to release microphone
+                stream.getTracks().forEach(track => track.stop());
+                
+                sendVoiceToAgent(audioBlob);
+            });
+
+            mediaRecorder.start();
+            isRecording = true;
+            
+            micButton.className = 'mic-button recording';
+            micStatusText.textContent = 'Sedang Merakam...';
+            micHelperText.textContent = 'Klik mikrofon sekali lagi apabila anda selesai bercakap.';
+
+        } catch (err) {
+            console.error('Microphone access denied:', err);
+            showError('Gagal mengakses mikrofon. Sila benarkan akses mikrofon di pelayar anda.');
+            resetMicButton();
+        }
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+            isRecording = false;
+        }
+    }
+
+    function resetMicButton() {
+        isRecording = false;
+        micButton.className = 'mic-button idle';
+        micStatusText.textContent = 'Klik Mikrofon Untuk Mula Bercakap';
+        micHelperText.textContent = 'Pastikan anda membenarkan akses mikrofon di pelayar anda.';
+    }
+
+    async function sendVoiceToAgent(audioBlob) {
+        const currentKey = localStorage.getItem('ilmu_api_key') || '';
+        
+        micButton.className = 'mic-button processing';
+        micStatusText.textContent = 'Memproses...';
+        micHelperText.textContent = 'Ejen sedang mendengar (STT) & merangka jawapan (LLM)...';
+
+        const formData = new FormData();
+        const ext = audioBlob.type.includes('webm') ? 'webm' : audioBlob.type.includes('ogg') ? 'ogg' : 'wav';
+        formData.append('file', audioBlob, `recording.${ext}`);
+        formData.append('system_prompt', agentSystemPrompt.value);
+        formData.append('voice', agentVoiceSelect.value);
+        formData.append('history', JSON.stringify(agentChatHistory));
+
+        try {
+            const response = await fetch('/api/voice-agent', {
+                method: 'POST',
+                headers: {
+                    'X-ILMU-API-KEY': currentKey
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || 'Gagal memproses perbualan dengan ejen.');
+            }
+
+            const data = await response.json();
+            
+            // Remove default chat placeholder
+            const placeholder = agentChatLog.querySelector('.chat-placeholder');
+            if (placeholder) {
+                placeholder.remove();
+            }
+
+            // Append messages
+            appendChatBubble('user', data.user_transcript);
+            appendChatBubble('assistant', data.ai_response, data.latency);
+
+            // Add messages to conversation context history
+            agentChatHistory.push({ role: 'user', content: data.user_transcript });
+            agentChatHistory.push({ role: 'assistant', content: data.ai_response });
+
+            if (data.audio) {
+                micButton.className = 'mic-button speaking';
+                micStatusText.textContent = 'Ejen Sedang Bertutur...';
+                micHelperText.textContent = 'Dengar jawapan perkakasan komputer daripada ejen.';
+
+                playAgentAudio(data.audio);
+            } else {
+                resetMicButton();
+            }
+
+        } catch (err) {
+            console.error('Voice Agent connection error:', err);
+            showError(err.message);
+            resetMicButton();
+        }
+    }
+
+    function playAgentAudio(base64Audio) {
+        try {
+            const audioBytes = atob(base64Audio);
+            const arrayBuffer = new ArrayBuffer(audioBytes.length);
+            const ia = new Uint8Array(arrayBuffer);
+            for (let i = 0; i < audioBytes.length; i++) {
+                ia[i] = audioBytes.charCodeAt(i);
+            }
+            const blob = new Blob([arrayBuffer], { type: 'audio/mp3' });
+            const url = URL.createObjectURL(blob);
+            
+            currentAgentAudio = new Audio(url);
+            currentAgentAudio.addEventListener('ended', () => {
+                resetMicButton();
+                currentAgentAudio = null;
+            });
+            currentAgentAudio.addEventListener('error', (e) => {
+                console.error('Audio playback error:', e);
+                resetMicButton();
+                currentAgentAudio = null;
+            });
+            currentAgentAudio.play().catch(err => {
+                console.warn('Playback blocked by browser auto-play policy:', err);
+                micStatusText.textContent = 'Audio Disekat oleh Pelayar';
+                micHelperText.textContent = 'Klik butang mikrofon untuk meneruskan perbualan.';
+                setTimeout(resetMicButton, 3000);
+            });
+        } catch (e) {
+            console.error('Failed to parse base64 audio:', e);
+            resetMicButton();
+        }
+    }
+
+    function appendChatBubble(role, text, latency = null) {
+        const row = document.createElement('div');
+        row.className = `chat-row ${role}`;
+        
+        const sender = document.createElement('div');
+        sender.className = 'chat-sender';
+        sender.textContent = role === 'user' ? 'Pelanggan' : 'Ejen AI (RiaTech)';
+        
+        const bubble = document.createElement('div');
+        bubble.className = 'chat-bubble';
+        bubble.textContent = text;
+
+        row.appendChild(sender);
+        row.appendChild(bubble);
+
+        if (role === 'assistant' && latency) {
+            const latencyBadge = document.createElement('div');
+            latencyBadge.className = 'latency-badge';
+            latencyBadge.innerHTML = `⏱️ ASR: <strong>${latency.asr}s</strong> | LLM: <strong>${latency.llm}s</strong> | TTS: <strong>${latency.tts}s</strong> | Total: <strong>${latency.total}s</strong>`;
+            row.appendChild(latencyBadge);
+        }
+
+        agentChatLog.appendChild(row);
+        agentChatLog.scrollTop = agentChatLog.scrollHeight;
+    }
+
+    function clearAgentChat() {
+        if (currentAgentAudio) {
+            currentAgentAudio.pause();
+            currentAgentAudio = null;
+        }
+        agentChatHistory = [];
+        agentChatLog.innerHTML = `
+            <div class="chat-placeholder">
+                Perbualan anda telah diset semula. Klik mikrofon untuk memulakan perbualan baru.
+            </div>
+        `;
+        resetMicButton();
+        hideError();
+    }
+
+    micButton.addEventListener('click', toggleRecording);
+    clearAgentChatBtn.addEventListener('click', clearAgentChat);
 });

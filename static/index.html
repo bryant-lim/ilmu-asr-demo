@@ -24,7 +24,7 @@
         </header>
 
         <!-- Configuration and Input Panel -->
-        <section class="control-panel card">
+        <section class="credentials-panel card mb-6">
             <div class="panel-section api-key-section">
                 <h2 class="section-title">Credentials</h2>
                 <div class="input-group">
@@ -34,8 +34,18 @@
                 </div>
                 <p class="helper-text">Kunci API disimpan secara tempatan di dalam pelayar anda (localStorage).</p>
             </div>
+        </section>
 
-            <div class="panel-grid">
+        <!-- Navigation Tabs -->
+        <nav class="workspace-tabs">
+            <button class="tab-btn active" data-tab="lab">Lab Analisis</button>
+            <button class="tab-btn" data-tab="agent">Ejen Suara Real-Time</button>
+        </nav>
+
+        <!-- Lab Analisis Tab Content -->
+        <div id="labTabContent" class="tab-content">
+            <section class="control-panel card">
+                <div class="panel-grid">
                 <!-- Simulation Default Run -->
                 <div class="panel-section default-simulation">
                     <h2 class="section-title">Dialect STT</h2>
@@ -126,6 +136,65 @@
                 </div>
             </div>
         </section>
+        </div>
+
+        <!-- Ejen Suara Real-Time Tab Content -->
+        <div id="agentTabContent" class="tab-content hidden">
+            <div class="agent-layout">
+                <!-- System Prompt Configuration Card -->
+                <div class="card p-6 mb-6">
+                    <h3 class="card-subtitle text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--text-secondary);">Konfigurasi Ejen Suara</h3>
+                    <p class="helper-text mb-4">Ubah suai System Prompt di bawah untuk mengarahkan personaliti dan tugasan ejen.</p>
+                    <textarea id="agentSystemPrompt" rows="6" class="w-full text-sm font-sans border rounded p-3 mb-4" style="background-color: #fafafa; border-color: #e2e8f0; font-size: 0.9rem; line-height: 1.5; color: #1e293b; resize: vertical;">Anda adalah jurujual AI pintar bagi kedai perkakasan komputer "RiaTech Computer Store". Tugas anda adalah membantu pelanggan membeli hardware komputer (CPU, GPU, RAM, Laptop, dll).
+
+Patuhi peraturan penting ini untuk bahasa:
+1. Secara Lalai (Default): Bercakap dalam dialek Kelantan yang mesra (Kecek Kelate) untuk membina hubungan rapat.
+2. Keanjalan Bahasa (Flexible Language): Jawab menggunakan bahasa yang sama yang dituturkan oleh pelanggan dalam input suara mereka:
+   - Jika pelanggan bertutur dalam loghat Kelantan, jawab dalam loghat Kelantan.
+   - Jika pelanggan bertutur dalam Bahasa Malaysia standard, jawab dalam Bahasa Malaysia.
+   - Jika pelanggan bertutur dalam Bahasa Inggeris (English), jawab dalam Bahasa Inggeris.
+   - Jika pelanggan bertutur dalam Bahasa Mandarin (Cina), jawab dalam Bahasa Mandarin (gunakan tulisan Hanzi).
+3. Mengikut Permintaan: Jika pelanggan meminta anda bercakap dalam bahasa tertentu secara eksplisit (cth: "Tolong respon dalam bahasa Inggeris"), anda MESTI menukar perbualan ke bahasa tersebut sepenuhnya.
+4. Ringkas: Pastikan jawapan anda sangat ringkas (1-2 ayat sahaja) agar sesuai untuk perbualan suara yang lancar.</textarea>
+                    
+                    <div class="tts-controls-column" style="max-width: 320px; margin-top: 1.5rem;">
+                        <label for="agentVoiceSelect" class="text-xs font-semibold uppercase tracking-wider mb-1.5 block" style="color: var(--text-secondary);">Pilih Suara Ejen</label>
+                        <div class="select-wrapper">
+                            <select id="agentVoiceSelect">
+                                <option value="voice_1">Voice 1 (Perempuan - Standard)</option>
+                                <option value="voice_2" selected>Voice 2 (Lelaki - Standard)</option>
+                                <option value="voice_3">Voice 3 (Lelaki Alternatif)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Voice Recording Panel -->
+                <div class="card p-8 text-center flex flex-col items-center justify-center mb-6" style="min-height: 250px;">
+                    <div id="micButton" class="mic-button idle">
+                        <svg class="mic-icon" viewBox="0 0 24 24" style="width: 32px; height: 32px;">
+                            <path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                            <path fill="currentColor" d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                        </svg>
+                    </div>
+                    <h3 id="micStatusText" class="text-lg font-semibold mt-4 mb-1" style="color: var(--text-primary);">Klik Mikrofon Untuk Mula Bercakap</h3>
+                    <p id="micHelperText" class="text-sm text-muted">Pastikan anda membenarkan akses mikrofon di pelayar anda.</p>
+                </div>
+
+                <!-- Voice Chat Log Panel -->
+                <div class="card p-6">
+                    <div class="flex items-center justify-between border-b pb-3 mb-4" style="border-color: var(--border-color);">
+                        <h3 class="card-subtitle text-xs font-semibold uppercase tracking-wider" style="color: var(--text-secondary);">Log Perbualan</h3>
+                        <button id="clearAgentChatBtn" class="btn btn-secondary text-xs" style="padding: 0.25rem 0.75rem;">Set Semula</button>
+                    </div>
+                    <div id="agentChatLog" class="agent-chat-log">
+                        <div class="chat-placeholder">
+                            Perbualan anda akan dipaparkan di sini secara real-time.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Footer -->
         <footer class="workspace-footer">
